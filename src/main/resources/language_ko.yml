@@ -1,0 +1,5 @@
+no_spawners: "&c스포너가 배치되지 않았습니다."
+spawner_list_header: "&6--- 스포너 목록 ---"
+spawner_list_entry: "&e스포너 위치: {location} -> &b엔티티: {entity} &a(제한: {limit})"
+spawner_removed: "&c스포너가 제거되었습니다: {location}."
+command_only_players: "&c플레이어만 이 명령을 실행할 수 있습니다."

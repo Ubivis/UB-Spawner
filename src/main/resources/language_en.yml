@@ -1,0 +1,5 @@
+no_spawners: "&cNo spawners have been placed."
+spawner_list_header: "&6--- Spawner List ---"
+spawner_list_entry: "&eSpawner at {location} -> &bEntity: {entity} &a(Limit: {limit})"
+spawner_removed: "&cSpawner removed at {location}."
+command_only_players: "&cOnly players can execute this command."
