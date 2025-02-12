@@ -7,3 +7,5 @@ target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst
 target/project-local-repo/com.ubvismedia/spawnerplugin/1.0-SNAPSHOT/spawnerplugin-1.0-SNAPSHOT.jar
 target/project-local-repo/com.ubvismedia/spawnerplugin/1.0-SNAPSHOT/spawnerplugin-1.0-SNAPSHOT.pom
 target/classes/com/ubivismedia/spawnerplugin/SpawnerPlugin.class
+target/project-local-repo/com.ubvismedia/spawnerplugin/0.1-SNAPSHOT-1/spawnerplugin-0.1-SNAPSHOT-1.jar
+target/spawnerplugin-0.1-SNAPSHOT-1.jar
