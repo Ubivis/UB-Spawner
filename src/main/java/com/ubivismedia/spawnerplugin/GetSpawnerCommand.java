@@ -104,6 +104,16 @@ public class GetSpawnerCommand implements CommandExecutor, TabCompleter {
                     .map(Enum::name)
                     .filter(name -> name.toLowerCase().startsWith(args[0].toLowerCase()))
                     .collect(Collectors.toList());
+        } else if (args.length == 2) {
+            return List.of("10", "20", "30", "40", "50"); // Radius suggestions
+        } else if (args.length == 3) {
+            return List.of("5", "10", "15", "20", "25"); // Active entity limit suggestions
+        } else if (args.length == 4) {
+            return List.of("20", "40", "60", "80", "100"); // Spawn interval suggestions (ticks)
+        } else if (args.length == 5) {
+            return List.of("0", "10", "20", "50", "100"); // Total spawn limit suggestions
+        } else if (args.length == 6) {
+            return List.of("true", "false"); // Destroy on limit suggestions
         }
         return new ArrayList<>();
     }
