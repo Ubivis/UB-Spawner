@@ -6,5 +6,5 @@ description: A Minecraft plugin that creates placeable and configurable spawners
 commands:
   getspawner:
     description: Get a custom spawner item.
-    usage: /getspawner [entityType] [radius] [limit] [interval]
+    usage: /getspawner [entityType] [radius] [activeLimit] [interval] [spawnLimit] [destroyOnLimit]
     permission: spawnerplugin.getspawner

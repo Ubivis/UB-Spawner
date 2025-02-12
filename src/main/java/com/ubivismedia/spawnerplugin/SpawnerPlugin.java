@@ -21,23 +21,17 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.*;
 
 public class SpawnerPlugin extends JavaPlugin implements Listener, CommandExecutor, TabCompleter {
 
-    // Holds all active spawners
+    // Map to hold all active spawners
     private final Map<Location, SpawnerData> spawners = new HashMap<>();
     private NamespacedKey spawnerKey;
 
     @Override
     public void onEnable() {
         getLogger().info("SpawnerPlugin has been enabled!");
-
-        // Create a NamespacedKey for our custom spawner data
         spawnerKey = new NamespacedKey(this, "custom_spawner");
 
         // Register events and command executor for /getspawner
@@ -49,54 +43,76 @@ public class SpawnerPlugin extends JavaPlugin implements Listener, CommandExecut
     }
 
     /**
-     * Adds a spawner at the specified location with the given configuration.
+     * Registers a new spawner at the specified location using the provided configuration.
      *
-     * @param location The location to place the spawner.
-     * @param type     The entity type to spawn.
-     * @param radius   The activation radius for players.
-     * @param limit    The maximum number of entities allowed nearby.
-     * @param interval The spawn interval in ticks.
+     * @param location       The location where the spawner is placed.
+     * @param type           The entity type to spawn.
+     * @param radius         The radius within which a player must be present.
+     * @param activeLimit    Maximum number of entities allowed near the spawner.
+     * @param interval       The number of ticks between spawn attempts.
+     * @param spawnLimit     The maximum total spawns allowed over the spawner's lifetime (0 = unlimited).
+     * @param destroyOnLimit If true, the spawner destroys itself once spawnLimit is reached.
      */
-    public void addSpawner(Location location, EntityType type, int radius, int limit, long interval) {
-        spawners.put(location, new SpawnerData(type, radius, limit, interval));
+    public void addSpawner(Location location, EntityType type, int radius, int activeLimit, long interval, int spawnLimit, boolean destroyOnLimit) {
+        spawners.put(location, new SpawnerData(type, radius, activeLimit, interval, spawnLimit, destroyOnLimit));
         getLogger().info("Spawner created at " + location.toString() + " for " + type.toString());
     }
 
     /**
-     * This task runs every second (20 ticks) and processes all registered spawners.
+     * This task runs every tick to process each spawner:
+     * - Checks if the spawner has reached its lifetime spawn limit.
+     * - Increments its internal tick counter and only spawns when the interval is met.
+     * - Checks if any players are nearby.
+     * - Ensures the active entities are below the active limit before spawning.
      */
     private void startSpawnerTask() {
         new BukkitRunnable() {
             @Override
             public void run() {
-                for (Map.Entry<Location, SpawnerData> entry : spawners.entrySet()) {
+                Iterator<Map.Entry<Location, SpawnerData>> iter = spawners.entrySet().iterator();
+                while (iter.hasNext()) {
+                    Map.Entry<Location, SpawnerData> entry = iter.next();
                     Location location = entry.getKey();
                     SpawnerData data = entry.getValue();
                     World world = location.getWorld();
-                    
                     if (world == null) continue;
 
-                    // Count the number of nearby entities of the given type
-                    long entityCount = world.getEntitiesByClass(data.type.getEntityClass()).stream()
-                            .filter(e -> e.getLocation().distance(location) < data.radius)
-                            .count();
-                    
-                    // Check if any player is within the activation radius
+                    // Check lifetime spawn limit
+                    if (data.spawnLimit > 0 && data.spawnCount >= data.spawnLimit) {
+                        if (data.destroyOnLimit) {
+                            getLogger().info("Spawner at " + location.toString() + " destroyed after reaching spawn limit.");
+                            iter.remove();
+                        }
+                        continue;
+                    }
+
+                    // Increment tick counter and only process when interval is reached
+                    data.tickCounter++;
+                    if (data.tickCounter < data.interval) continue;
+                    data.tickCounter = 0;
+
+                    // Check for a nearby player
                     boolean hasNearbyPlayer = world.getPlayers().stream()
                             .anyMatch(p -> p.getLocation().distance(location) < data.radius);
+                    if (!hasNearbyPlayer) continue;
 
-                    // Spawn the entity if conditions are met
-                    if (hasNearbyPlayer && entityCount < data.limit) {
+                    // Count active entities of the spawner's type near the spawner
+                    long activeCount = world.getEntitiesByClass(data.type.getEntityClass()).stream()
+                            .filter(e -> e.getLocation().distance(location) < data.radius)
+                            .count();
+
+                    if (activeCount < data.activeLimit) {
                         world.spawnEntity(location, data.type);
+                        data.spawnCount++;
                     }
                 }
             }
-        }.runTaskTimer(this, 0L, 20L);
+        }.runTaskTimer(this, 1L, 1L); // Runs every tick
     }
 
     /**
-     * Command: /getspawner [entityType] [radius] [limit] [interval]
-     * Gives the player a custom spawner item (a Nether Star) with embedded configuration.
+     * Command: /getspawner [entityType] [radius] [activeLimit] [interval] [spawnLimit] [destroyOnLimit]
+     * Provides the admin with a custom spawner item (a Nether Star) that contains its configuration.
      */
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -110,11 +126,13 @@ public class SpawnerPlugin extends JavaPlugin implements Listener, CommandExecut
             return true;
         }
 
-        // Set default values
+        // Default values
         EntityType type = EntityType.ZOMBIE;
         int radius = 20;
-        int limit = 10;
+        int activeLimit = 10;
         long interval = 20L;
+        int spawnLimit = 0; // 0 = unlimited
+        boolean destroyOnLimit = false;
 
         if (args.length >= 1) {
             try {
@@ -132,9 +150,9 @@ public class SpawnerPlugin extends JavaPlugin implements Listener, CommandExecut
         }
         if (args.length >= 3) {
             try {
-                limit = Integer.parseInt(args[2]);
+                activeLimit = Integer.parseInt(args[2]);
             } catch (NumberFormatException ex) {
-                player.sendMessage("Invalid limit. Using default (10).");
+                player.sendMessage("Invalid activeLimit. Using default (10).");
             }
         }
         if (args.length >= 4) {
@@ -144,16 +162,32 @@ public class SpawnerPlugin extends JavaPlugin implements Listener, CommandExecut
                 player.sendMessage("Invalid interval. Using default (20 ticks).");
             }
         }
+        if (args.length >= 5) {
+            try {
+                spawnLimit = Integer.parseInt(args[4]);
+            } catch (NumberFormatException ex) {
+                player.sendMessage("Invalid spawnLimit. Using default (0 - unlimited).");
+            }
+        }
+        if (args.length >= 6) {
+            destroyOnLimit = Boolean.parseBoolean(args[5]);
+        }
 
         // Create the custom spawner item (using a Nether Star)
         ItemStack spawnerItem = new ItemStack(Material.NETHER_STAR);
         ItemMeta meta = spawnerItem.getItemMeta();
         meta.setDisplayName("Custom Spawner");
-        // Store the configuration in the PersistentDataContainer
-        String dataString = type.name() + "," + radius + "," + limit + "," + interval;
+        // Save configuration data: type, radius, activeLimit, interval, spawnLimit, destroyOnLimit
+        String dataString = type.name() + "," + radius + "," + activeLimit + "," + interval + "," + spawnLimit + "," + destroyOnLimit;
         meta.getPersistentDataContainer().set(spawnerKey, PersistentDataType.STRING, dataString);
-        // Set lore to show the configuration parameters
-        meta.setLore(List.of("Entity: " + type.name(), "Radius: " + radius, "Limit: " + limit, "Interval: " + interval + " ticks"));
+        List<String> lore = new ArrayList<>();
+        lore.add("Entity: " + type.name());
+        lore.add("Radius: " + radius);
+        lore.add("Active Limit: " + activeLimit);
+        lore.add("Interval: " + interval + " ticks");
+        lore.add("Spawn Limit: " + (spawnLimit == 0 ? "Unlimited" : spawnLimit));
+        lore.add("Destroy on Limit: " + destroyOnLimit);
+        meta.setLore(lore);
         spawnerItem.setItemMeta(meta);
 
         player.getInventory().addItem(spawnerItem);
@@ -162,7 +196,7 @@ public class SpawnerPlugin extends JavaPlugin implements Listener, CommandExecut
     }
 
     /**
-     * Provide tab completion for the /getspawner command (suggests entity types).
+     * Provides tab completion for the /getspawner command (suggests entity types).
      */
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
@@ -177,52 +211,45 @@ public class SpawnerPlugin extends JavaPlugin implements Listener, CommandExecut
     }
 
     /**
-     * Listens for a player right-clicking a block with the custom spawner item.
-     * When detected, places a spawner at the clicked location using the embedded configuration.
+     * Listens for an admin right-clicking a block with the custom spawner item.
+     * When detected, reads the embedded configuration and places a new spawner at that location.
      */
     @EventHandler
     public void onPlayerInteract(PlayerInteractEvent event) {
-        // Only process right-click on a block
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
-            return;
-        }
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         Player player = event.getPlayer();
         ItemStack item = event.getItem();
-        if (item == null || !item.hasItemMeta()) {
-            return;
-        }
+        if (item == null || !item.hasItemMeta()) return;
         ItemMeta meta = item.getItemMeta();
-        if (!"Custom Spawner".equals(meta.getDisplayName())) {
-            return;
-        }
-        if (!meta.getPersistentDataContainer().has(spawnerKey, PersistentDataType.STRING)) {
-            return;
-        }
+        if (!"Custom Spawner".equals(meta.getDisplayName())) return;
+        if (!meta.getPersistentDataContainer().has(spawnerKey, PersistentDataType.STRING)) return;
+
         String dataStr = meta.getPersistentDataContainer().get(spawnerKey, PersistentDataType.STRING);
         if (dataStr == null) return;
         String[] parts = dataStr.split(",");
-        if (parts.length < 4) return;
+        if (parts.length < 6) return;
 
         EntityType type;
-        int radius;
-        int limit;
+        int radius, activeLimit, spawnLimit;
         long interval;
+        boolean destroyOnLimit;
         try {
             type = EntityType.valueOf(parts[0]);
             radius = Integer.parseInt(parts[1]);
-            limit = Integer.parseInt(parts[2]);
+            activeLimit = Integer.parseInt(parts[2]);
             interval = Long.parseLong(parts[3]);
+            spawnLimit = Integer.parseInt(parts[4]);
+            destroyOnLimit = Boolean.parseBoolean(parts[5]);
         } catch (Exception e) {
             player.sendMessage("Error reading spawner data. Spawner not placed.");
             return;
         }
 
-        // Determine spawn location (one block above the clicked block)
+        // Determine the placement location (one block above the clicked block)
         Location loc = event.getClickedBlock().getLocation().add(0, 1, 0);
-
-        addSpawner(loc, type, radius, limit, interval);
+        addSpawner(loc, type, radius, activeLimit, interval, spawnLimit, destroyOnLimit);
         player.sendMessage("Spawner placed at " + loc.toString() + ".");
-        event.setCancelled(true); // Prevent further processing of the event
+        event.setCancelled(true);
 
         // Remove one spawner item from the player's hand
         int amount = item.getAmount();
@@ -234,19 +261,25 @@ public class SpawnerPlugin extends JavaPlugin implements Listener, CommandExecut
     }
 
     /**
-     * Internal class to hold spawner configuration data.
+     * Internal class to hold the spawner configuration and runtime counters.
      */
     static class SpawnerData {
         EntityType type;
         int radius;
-        int limit;
+        int activeLimit;
         long interval;
+        int spawnLimit; // total spawns allowed (0 = unlimited)
+        boolean destroyOnLimit;
+        int spawnCount = 0;
+        long tickCounter = 0;
 
-        SpawnerData(EntityType type, int radius, int limit, long interval) {
+        SpawnerData(EntityType type, int radius, int activeLimit, long interval, int spawnLimit, boolean destroyOnLimit) {
             this.type = type;
             this.radius = radius;
-            this.limit = limit;
+            this.activeLimit = activeLimit;
             this.interval = interval;
+            this.spawnLimit = spawnLimit;
+            this.destroyOnLimit = destroyOnLimit;
         }
     }
 }
