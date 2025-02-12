@@ -15,5 +15,6 @@ public class SpawnerPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(spawnerManager, this);
         getCommand("listspawners").setExecutor(new SpawnerCommand(spawnerManager, languageManager));
         getCommand("getspawner").setExecutor(new GetSpawnerCommand(this, languageManager));
+        getServer().getPluginManager().registerEvents(new SpawnerPlacementListener(this), this);
     }
 }
