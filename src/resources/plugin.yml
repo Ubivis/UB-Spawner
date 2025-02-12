@@ -1,0 +1,10 @@
+name: SpawnerPlugin
+main: com.example.spawnerplugin.SpawnerPlugin
+version: 1.0
+api-version: 1.19
+description: A Minecraft plugin that creates placeable and configurable spawners.
+commands:
+  getspawner:
+    description: Get a custom spawner item.
+    usage: /getspawner [entityType] [radius] [limit] [interval]
+    permission: spawnerplugin.getspawner
