@@ -1,6 +1,6 @@
 name: SpawnerPlugin
 main: com.ubivismedia.spawnerplugin.SpawnerPlugin
-version: 1.0
+version: 0.1.2
 api-version: 1.21.4
 description: A Minecraft plugin that creates placeable and configurable spawners.
 commands:

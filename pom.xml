@@ -6,7 +6,7 @@
 
     <groupId>com.ubvismedia</groupId>
     <artifactId>spawnerplugin</artifactId>
-    <version>0.1-SNAPSHOT-1</version>
+    <version>0.1.2-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>SpawnerPlugin</name>
