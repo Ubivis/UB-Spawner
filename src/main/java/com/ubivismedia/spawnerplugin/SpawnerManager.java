@@ -1,5 +1,8 @@
 package com.ubivismedia.spawnerplugin;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -40,11 +43,21 @@ public class SpawnerManager implements Listener {
         for (Map.Entry<Location, Spawner> entry : spawners.entrySet()) {
             Location loc = entry.getKey();
             Spawner spawner = entry.getValue();
-            String msg = languageManager.getMessage("spawner_list_entry")
-                    .replace("{location}", locToString(loc))
+
+            String locationString = locToString(loc);
+            String messageText = languageManager.getMessage("spawner_list_entry")
+                    .replace("{location}", locationString)
                     .replace("{entity}", spawner.getEntityType())
                     .replace("{limit}", String.valueOf(spawner.getMaxSpawns()));
-            player.sendMessage(msg);
+
+            Component messageComponent = Component.text(messageText)
+                    .append(Component.space())
+                    .append(Component.text("[" + languageManager.getMessage("spawner_remove_button") + "]")
+                            .color(NamedTextColor.RED)
+                            .clickEvent(ClickEvent.runCommand("/removespawner " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ()))
+                    );
+
+            player.sendMessage(messageComponent);
         }
     }
 
