@@ -1,0 +1,17 @@
+name: SpawnerPlugin
+main: com.ubivismedia.spawnerplugin.SpawnerPlugin
+version: 0.1.8
+api-version: 1.19
+description: A Minecraft plugin that creates and manages spawners.
+
+commands:
+  listspawners:
+    description: List all created spawners.
+    usage: /listspawners
+  getspawner:
+    description: Get a custom spawner item.
+    usage: /getspawner
+  spawner:
+    description: Reloads the Spawner Plugin configuration and language files.
+    usage: /spawner reload
+    permission: spawnerplugin.admin
