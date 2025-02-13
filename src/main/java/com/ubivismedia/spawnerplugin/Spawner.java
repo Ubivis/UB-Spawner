@@ -1,19 +1,23 @@
 package com.ubivismedia.spawnerplugin;
 
+import java.util.UUID;
+
 public class Spawner {
     private final String entityType;
     private final int radius;
-    private final int spawnLimit;
-    private final long interval;
-    private final boolean destroyOnLimit;
+    private final int concurrentSpawns;
+    private final long spawnInterval;
+    private final int maxSpawns;
     private int spawnCount;
+    private final UUID armorStandUUID;
 
-    public Spawner(String entityType, int radius, int spawnLimit, long interval, boolean destroyOnLimit) {
+    public Spawner(String entityType, int radius, int concurrentSpawns, long spawnInterval, int maxSpawns, UUID armorStandUUID) {
         this.entityType = entityType;
         this.radius = radius;
-        this.spawnLimit = spawnLimit;
-        this.interval = interval;
-        this.destroyOnLimit = destroyOnLimit;
+        this.concurrentSpawns = concurrentSpawns;
+        this.spawnInterval = spawnInterval;
+        this.maxSpawns = maxSpawns;
+        this.armorStandUUID = armorStandUUID;
         this.spawnCount = 0;
     }
 
@@ -25,20 +29,24 @@ public class Spawner {
         return radius;
     }
 
-    public int getSpawnLimit() {
-        return spawnLimit;
+    public int getConcurrentSpawns() {
+        return concurrentSpawns;
     }
 
-    public long getInterval() {
-        return interval;
+    public long getSpawnInterval() {
+        return spawnInterval;
     }
 
-    public boolean shouldDestroyOnLimit() {
-        return destroyOnLimit;
+    public int getMaxSpawns() {
+        return maxSpawns;
     }
 
     public int getSpawnCount() {
         return spawnCount;
+    }
+
+    public UUID getArmorStandUUID() {
+        return armorStandUUID;
     }
 
     public void incrementSpawnCount() {
@@ -46,6 +54,10 @@ public class Spawner {
     }
 
     public boolean hasReachedSpawnLimit() {
-        return spawnLimit > 0 && spawnCount >= spawnLimit;
+        return maxSpawns > 0 && spawnCount >= maxSpawns;
+    }
+
+    public boolean canSpawn() {
+        return spawnCount < maxSpawns;
     }
 }

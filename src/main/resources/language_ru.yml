@@ -1,5 +1,0 @@
-no_spawners: "&cСпавнеры не были размещены."
-spawner_list_header: "&6--- Список Спавнеров ---"
-spawner_list_entry: "&eСпавнер в {location} -> &bСущество: {entity} &a(Лимит: {limit})"
-spawner_removed: "&cСпавнер удалён в {location}."
-command_only_players: "&cТолько игроки могут выполнить эту команду."

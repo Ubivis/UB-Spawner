@@ -6,11 +6,14 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -33,66 +36,47 @@ public class GetSpawnerCommand implements CommandExecutor, TabCompleter {
         }
 
         Player player = (Player) sender;
+        FileConfiguration config = plugin.getConfig();
 
-        // Default values
-        String entityType = "ZOMBIE";
-        int radius = 20;
-        int limit = 10;
-        long interval = 20L;
-        int spawnLimit = 0; // 0 means unlimited spawns
-        boolean destroyOnLimit = false;
+        String entityType = config.getString("default_entityType", "ZOMBIE");
+        int activationRadius = config.getInt("default_activationRadius", 10);
+        int concurrentSpawns = config.getInt("default_concurrentSpawns", 5);
+        int spawnInterval = config.getInt("default_spawnInterval", 10) * 20; // Convert seconds to ticks
+        int maxSpawns = config.getInt("default_maxSpawns", 50);
 
-        if (args.length >= 1) {
-            if (Arrays.stream(EntityType.values()).map(Enum::name).collect(Collectors.toList()).contains(args[0].toUpperCase())) {
-                entityType = args[0].toUpperCase();
-            } else {
-                player.sendMessage("Invalid entity type. Available options: " + Arrays.stream(EntityType.values()).map(Enum::name).collect(Collectors.joining(", ")));
-                return true;
-            }
-        }
-        if (args.length >= 2) {
-            try { radius = Integer.parseInt(args[1]); } catch (NumberFormatException ignored) {}
-        }
-        if (args.length >= 3) {
-            try { limit = Integer.parseInt(args[2]); } catch (NumberFormatException ignored) {}
-        }
-        if (args.length >= 4) {
-            try { interval = Long.parseLong(args[3]); } catch (NumberFormatException ignored) {}
-        }
-        if (args.length >= 5) {
-            try { spawnLimit = Integer.parseInt(args[4]); } catch (NumberFormatException ignored) {}
-        }
-        if (args.length >= 6) {
-            destroyOnLimit = Boolean.parseBoolean(args[5]);
+        if (args.length >= 1) entityType = args[0].toUpperCase();
+        if (args.length >= 2) activationRadius = Integer.parseInt(args[1]);
+        if (args.length >= 3) concurrentSpawns = Integer.parseInt(args[2]);
+        if (args.length >= 4) spawnInterval = Integer.parseInt(args[3]) * 20;
+        if (args.length >= 5) maxSpawns = Integer.parseInt(args[4]);
+
+        try {
+            EntityType.valueOf(entityType);
+        } catch (IllegalArgumentException e) {
+            player.sendMessage(languageManager.getMessage("getspawner_invalid_entity"));
+            return true;
         }
 
-        // Create spawner item
-        ItemStack spawnerItem = new ItemStack(Material.NETHER_STAR);
+        ItemStack spawnerItem = new ItemStack(Material.SPAWNER);
         ItemMeta meta = spawnerItem.getItemMeta();
         if (meta == null) return false;
 
         meta.setDisplayName(languageManager.getMessage("spawner_item_name"));
 
-        // Store data in the item
         NamespacedKey key = new NamespacedKey(plugin, "spawner_data");
-        String spawnerData = entityType + "," + radius + "," + limit + "," + interval + "," + spawnLimit + "," + destroyOnLimit;
-        meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, spawnerData);
+        meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, entityType + "," + activationRadius + "," + concurrentSpawns + "," + spawnInterval + "," + maxSpawns);
 
-        // Add lore for better visibility
         List<String> lore = new ArrayList<>();
-        lore.add("Entity: " + entityType);
-        lore.add("Radius: " + radius);
-        lore.add("Limit: " + limit);
-        lore.add("Interval: " + interval + " ticks");
-        lore.add("Spawn Limit: " + (spawnLimit == 0 ? "Unlimited" : spawnLimit));
-        lore.add("Destroy on Limit: " + destroyOnLimit);
+        lore.add(languageManager.getMessage("spawner_lore_entity").replace("{entity}", entityType));
+        lore.add(languageManager.getMessage("spawner_lore_radius").replace("{radius}", String.valueOf(activationRadius)));
+        lore.add(languageManager.getMessage("spawner_lore_concurrent").replace("{concurrent}", String.valueOf(concurrentSpawns)));
+        lore.add(languageManager.getMessage("spawner_lore_interval").replace("{interval}", String.valueOf(spawnInterval / 20)));
+        lore.add(languageManager.getMessage("spawner_lore_maxspawns").replace("{maxspawns}", String.valueOf(maxSpawns)));
         meta.setLore(lore);
 
         spawnerItem.setItemMeta(meta);
-
         player.getInventory().addItem(spawnerItem);
         player.sendMessage(languageManager.getMessage("spawner_received"));
-        player.sendMessage("Usage: /getspawner <entity> <radius> <activeLimit> <interval> <spawnLimit> <destroyOnLimit>");
 
         return true;
     }
@@ -105,15 +89,13 @@ public class GetSpawnerCommand implements CommandExecutor, TabCompleter {
                     .filter(name -> name.toLowerCase().startsWith(args[0].toLowerCase()))
                     .collect(Collectors.toList());
         } else if (args.length == 2) {
-            return List.of("<radius> (e.g. 10, 20, 30, 40, 50)");
+            return List.of("<activationRadius>");
         } else if (args.length == 3) {
-            return List.of("<activeLimit> (e.g. 5, 10, 15, 20, 25)");
+            return List.of("<concurrentSpawns>");
         } else if (args.length == 4) {
-            return List.of("<interval> (ticks, e.g. 20, 40, 60, 80, 100)");
+            return List.of("<spawnInterval (seconds)>");
         } else if (args.length == 5) {
-            return List.of("<spawnLimit> (e.g. 0 (unlimited), 10, 20, 50, 100)");
-        } else if (args.length == 6) {
-            return List.of("<destroyOnLimit> (true/false)");
+            return List.of("<maxSpawns>");
         }
         return new ArrayList<>();
     }

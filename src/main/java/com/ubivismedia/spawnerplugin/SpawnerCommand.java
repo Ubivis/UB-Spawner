@@ -16,13 +16,13 @@ public class SpawnerCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (sender instanceof Player) {
-            Player player = (Player) sender;
-            spawnerManager.listSpawners(player);
-            return true;
-        } else {
+        if (!(sender instanceof Player)) {
             sender.sendMessage(languageManager.getMessage("command_only_players"));
-            return false;
+            return true;
         }
+
+        Player player = (Player) sender;
+        spawnerManager.listSpawners(player);
+        return true;
     }
 }

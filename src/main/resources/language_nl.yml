@@ -1,5 +1,0 @@
-no_spawners: "&cEr zijn geen spawners geplaatst."
-spawner_list_header: "&6--- Spawner Lijst ---"
-spawner_list_entry: "&eSpawner op {location} -> &bEntiteit: {entity} &a(Limiet: {limit})"
-spawner_removed: "&cSpawner verwijderd op {location}."
-command_only_players: "&cAlleen spelers kunnen dit commando uitvoeren."

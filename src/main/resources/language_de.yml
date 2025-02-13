@@ -1,5 +1,0 @@
-no_spawners: "&cEs wurden keine Spawner platziert."
-spawner_list_header: "&6--- Spawner Liste ---"
-spawner_list_entry: "&eSpawner bei {location} -> &bEntity: {entity} &a(Limit: {limit})"
-spawner_removed: "&cSpawner entfernt bei {location}."
-command_only_players: "&cNur Spieler können diesen Befehl ausführen."

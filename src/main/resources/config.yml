@@ -1,1 +1,6 @@
 language: "en"
+default_entityType: "ZOMBIE"
+default_activationRadius: 10
+default_concurrentSpawns: 5
+default_spawnInterval: 10
+default_maxSpawns: 50

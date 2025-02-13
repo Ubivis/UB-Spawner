@@ -1,5 +1,0 @@
-no_spawners: "&c未放置任何刷怪笼。"
-spawner_list_header: "&6--- 刷怪笼列表 ---"
-spawner_list_entry: "&e刷怪笼在 {location} -> &b实体: {entity} &a(限制: {limit})"
-spawner_removed: "&c已移除刷怪笼 {location}。"
-command_only_players: "&c只有玩家可以执行此命令。"

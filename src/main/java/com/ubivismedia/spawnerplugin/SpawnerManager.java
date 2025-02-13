@@ -2,12 +2,8 @@ package com.ubivismedia.spawnerplugin;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
-import org.bukkit.event.player.PlayerInteractEvent;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,7 +14,20 @@ public class SpawnerManager implements Listener {
 
     public SpawnerManager(SpawnerPlugin plugin, LanguageManager languageManager) {
         this.languageManager = languageManager;
-        Bukkit.getServer().getPluginManager().registerEvents(this, plugin);
+    }
+
+    public void addSpawner(Location location, Spawner spawner) {
+        spawners.put(location, spawner);
+        Bukkit.getLogger().info("Spawner registered at: " + location + " for entity: " + spawner.getEntityType());
+    }
+
+    public void removeSpawner(Location location) {
+        spawners.remove(location);
+        Bukkit.getLogger().info("Spawner removed from: " + location);
+    }
+
+    public Map<Location, Spawner> getSpawners() {
+        return spawners;
     }
 
     public void listSpawners(Player player) {
@@ -26,6 +35,7 @@ public class SpawnerManager implements Listener {
             player.sendMessage(languageManager.getMessage("no_spawners"));
             return;
         }
+
         player.sendMessage(languageManager.getMessage("spawner_list_header"));
         for (Map.Entry<Location, Spawner> entry : spawners.entrySet()) {
             Location loc = entry.getKey();
@@ -33,20 +43,8 @@ public class SpawnerManager implements Listener {
             String msg = languageManager.getMessage("spawner_list_entry")
                     .replace("{location}", locToString(loc))
                     .replace("{entity}", spawner.getEntityType())
-                    .replace("{limit}", String.valueOf(spawner.getSpawnLimit()));
+                    .replace("{limit}", String.valueOf(spawner.getMaxSpawns()));
             player.sendMessage(msg);
-        }
-    }
-
-    @EventHandler
-    public void onSpawnerInteract(PlayerInteractEvent event) {
-        if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-            Location loc = event.getClickedBlock().getLocation();
-            if (spawners.containsKey(loc)) {
-                event.getPlayer().sendMessage(languageManager.getMessage("spawner_removed").replace("{location}", locToString(loc)));
-                spawners.remove(loc);
-                event.getClickedBlock().setType(Material.AIR);
-            }
         }
     }
 

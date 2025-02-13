@@ -13,8 +13,20 @@ public class SpawnerPlugin extends JavaPlugin {
         spawnerManager = new SpawnerManager(this, languageManager);
 
         getServer().getPluginManager().registerEvents(spawnerManager, this);
+        getServer().getPluginManager().registerEvents(new SpawnerItemUseListener(this), this);
+
         getCommand("listspawners").setExecutor(new SpawnerCommand(spawnerManager, languageManager));
         getCommand("getspawner").setExecutor(new GetSpawnerCommand(this, languageManager));
-        getServer().getPluginManager().registerEvents(new SpawnerPlacementListener(this), this);
+        getCommand("spawner").setExecutor(new SpawnerAdminCommand(this));
+
+        getServer().getScheduler().runTaskTimer(this, new SpawnerActivationTask(this, spawnerManager), 0L, 20L);
+    }
+
+    public SpawnerManager getSpawnerManager() {
+        return spawnerManager;
+    }
+
+    public LanguageManager getLanguageManager() {
+        return languageManager;
     }
 }
